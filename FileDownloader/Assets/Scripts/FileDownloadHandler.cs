@@ -30,7 +30,6 @@ class FileDownloadHandler : DownloadHandlerScript
     protected override void ReceiveContentLength(int contentLength)
     {
         length = contentLength;
-        Debug.Log("ContentLengt : " + length);
     }
 
     protected override float GetProgress()
