@@ -39,6 +39,12 @@ public class FileDownloadManagerEditor : Editor {
         // EditorGUILayout.PropertyField(urlsProp, true);
         #endregion
 
+        #region filename
+        filenameProp.stringValue = EditorGUILayout.TextField("File Name", filenameProp.stringValue);
+        CheckFileName(filenameProp.stringValue);
+
+        #endregion
+
         #region Path
         GUILayout.BeginHorizontal();
         pathProp.stringValue = EditorGUILayout.TextField("Path", pathProp.stringValue);
@@ -49,12 +55,6 @@ public class FileDownloadManagerEditor : Editor {
                 pathProp.stringValue = path;
         }
         GUILayout.EndHorizontal();
-        #endregion
-
-        #region filename
-        filenameProp.stringValue = EditorGUILayout.TextField("File Name", filenameProp.stringValue);
-        CheckFileName(filenameProp.stringValue);
-
         #endregion
 
         #region BufferSize
