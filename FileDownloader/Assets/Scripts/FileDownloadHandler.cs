@@ -4,32 +4,33 @@ using System.IO;
 
 
 class FileDownloadHandler : DownloadHandlerScript
-{    
-    FileStream fs;
+{
+    private FileDownloadRequest fileDownloadRequest;
+
+    FileStream fileStream;
     int offset = 0;
     int length = 0;
 
-    public FileDownloadHandler(string path, byte[] buffer): base(buffer)
+    public FileDownloadHandler(FileDownloadRequest fileDownloadRequest) : base(fileDownloadRequest.buffer)
     {
-        fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+        this.fileDownloadRequest = fileDownloadRequest;
     }
 
     protected override bool ReceiveData(byte[] data, int dataLength)
     {
-        fs.Write(data, 0, dataLength);
-        offset += dataLength;
-        return true;
-    }
+        if (data == null || data.Length < 1)
+        {
+            return false;
+        }
 
-    protected override void CompleteContent()
-    {
-        fs.Flush();
-        fs.Close();
+        fileDownloadRequest.fileStream.Write(data, 0, dataLength);
+        fileDownloadRequest.receivedBytes += dataLength;
+        return true;
     }
 
     protected override void ReceiveContentLength(int contentLength)
     {
-        length = contentLength;
+        fileDownloadRequest.totalBytes = contentLength;
     }
 
     protected override float GetProgress()
@@ -38,5 +39,11 @@ class FileDownloadHandler : DownloadHandlerScript
             return 0.0f;
 
         return (float)offset / length;
+    }
+
+    protected override void CompleteContent()
+    {
+        fileStream.Flush();
+        fileStream.Close();
     }
 }

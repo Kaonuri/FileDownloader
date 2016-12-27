@@ -3,10 +3,10 @@
 //using UnityEditor;
 //
 //
-//[CustomEditor(typeof(DownloadManager))]
+//[CustomEditor(typeof(FileDownloadManager))]
 //public class DownloadManagerEditor : Editor {
 //
-//    private DownloadManager myScript;
+//    private FileDownloadManager myScript;
 //
 //    private string[] formats = new string[] {"mp4", "MP4"};
 //
@@ -19,8 +19,8 @@
 //
 //    private void OnEnable()
 //    {
-//        // myScript = serializedObject.targetObject as DownloadManager;
-//        myScript = target as DownloadManager;
+//        // myScript = serializedObject.targetObject as FileDownloadManager;
+//        myScript = target as FileDownloadManager;
 //
 //        urlProp = serializedObject.FindProperty("url");
 //        urlsProp = serializedObject.FindProperty("urls");
