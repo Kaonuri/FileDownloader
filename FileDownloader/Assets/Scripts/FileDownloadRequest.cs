@@ -8,7 +8,7 @@ public class FileDownloadRequest
     public string fileName;
     public string savePath;
 
-    public int bufferSize = 1024;
+    public int bufferSize;
     public byte[] buffer;
 
     public long receivedBytes;
@@ -26,6 +26,7 @@ public class FileDownloadRequest
         this.fileName = fileName;
         this.savePath = savePath;
 
+        bufferSize = 256*1024;
         buffer = new byte[bufferSize];
 
         receivedBytes = 0;
@@ -36,13 +37,14 @@ public class FileDownloadRequest
 
         fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write);
         unityWebRequest = UnityWebRequest.Get(url);
-        unityWebRequest.downloadHandler = new FileDownloadHandler(toFileDownload.savePath + "/" + toFileDownload.fileName, buffer);
+        unityWebRequest.downloadHandler = new FileDownloadHandler(this);
     }
 
     public void Release()
     {
         if (fileStream != null)
         {
+            fileStream.Flush();
             fileStream.Close();
             fileStream.Dispose();
             fileStream = null;

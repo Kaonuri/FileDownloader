@@ -68,29 +68,24 @@ public class FileDownloadManager : MonoBehaviour
         Debug.Log("Download " + queue.Count + " Contents");
         while (queue.Count != 0)
         {
-            FileDownloadRequest toFileDownload = queue.Dequeue();
+            FileDownloadRequest fileDownloadRequest = queue.Dequeue();
 
-            using (UnityWebRequest unityWebRequest = UnityWebRequest.Get(toFileDownload.url))
+            fileDownloadRequest.unityWebRequest.Send();
+
+            if (fileDownloadRequest.unityWebRequest.isError)
             {
-                byte[] buffer = new byte[bufferSize * 1024];
-                unityWebRequest.downloadHandler = new FileDownloadHandler(toFileDownload.savePath + "/" + toFileDownload.fileName, buffer);
-                unityWebRequest.Send();
+                Debug.LogError(fileDownloadRequest.unityWebRequest.error);
+            }
 
-                if (unityWebRequest.isError)
+            else
+            {
+                while (!fileDownloadRequest.unityWebRequest.isDone)
                 {
-                    Debug.LogError(unityWebRequest.error);
+                    Debug.Log("[" + fileDownloadRequest.fileName + "] Download Start...");
+                    progress = fileDownloadRequest.unityWebRequest.downloadProgress;
+                    yield return null;
                 }
-
-                else
-                {
-                    while (!unityWebRequest.isDone)
-                    {
-                        Debug.Log("[" + toFileDownload.fileName + "] Download Start...");
-                        progress = unityWebRequest.downloadProgress;
-                        yield return null;
-                    }
-                    Debug.Log("[" + toFileDownload.fileName + "] Download Complete!");
-                }
+                Debug.Log("[" + fileDownloadRequest.fileName + "] Download Complete!");
             }
             yield return null;
         }

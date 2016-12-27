@@ -7,10 +7,6 @@ class FileDownloadHandler : DownloadHandlerScript
 {
     private FileDownloadRequest fileDownloadRequest;
 
-    FileStream fileStream;
-    int offset = 0;
-    int length = 0;
-
     public FileDownloadHandler(FileDownloadRequest fileDownloadRequest) : base(fileDownloadRequest.buffer)
     {
         this.fileDownloadRequest = fileDownloadRequest;
@@ -35,15 +31,14 @@ class FileDownloadHandler : DownloadHandlerScript
 
     protected override float GetProgress()
     {
-        if (length == 0)
+        if (fileDownloadRequest.totalBytes == 0)
             return 0.0f;
 
-        return (float)offset / length;
+        return (float)fileDownloadRequest.receivedBytes / fileDownloadRequest.totalBytes;
     }
 
     protected override void CompleteContent()
     {
-        fileStream.Flush();
-        fileStream.Close();
+        fileDownloadRequest.Release();
     }
 }
