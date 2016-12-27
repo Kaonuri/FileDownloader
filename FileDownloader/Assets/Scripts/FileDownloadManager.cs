@@ -38,6 +38,7 @@ public class FileDownloadManager : MonoBehaviour
     private static FileDownloadManager instance = null;
 
     private static Queue<FileDownloadRequest> queue;
+    private FileDownloadRequest fileDownloadRequest = null;
 
     // public bool failedFileEnqueue = false;    
 
@@ -48,7 +49,11 @@ public class FileDownloadManager : MonoBehaviour
             FileDownloadManager.instance = FindObjectOfType(typeof(FileDownloadManager)) as FileDownloadManager;
         }
 
-        queue = new Queue<FileDownloadRequest>();
+        queue = new Queue<FileDownloadRequest>();        
+    }
+
+    void Start()
+    {
         AddDownload("https://d1afzz5wrpeqg9.cloudfront.net/resources/FOH_VER2/N_S3_LV1.mp4", "N_S5_LV1.mp4", Application.dataPath);
         AddDownload("https://d1afzz5wrpeqg9.cloudfront.net/resources/FOH_VER2/N_S3_LV2.mp4", "N_S5_LV2.mp4", Application.dataPath);
         AddDownload("https://d1afzz5wrpeqg9.cloudfront.net/resources/FOH_VER2/N_S3_LV3.mp4", "N_S5_LV3.mp4", Application.dataPath);
@@ -56,9 +61,11 @@ public class FileDownloadManager : MonoBehaviour
     }
 
     void OnApplicationQuit()
-    {
-        FileDownloadManager.instance = null;
+    {        
+        fileDownloadRequest.Release();
+        fileDownloadRequest = null;
         StopCoroutine(Download());
+        FileDownloadManager.instance = null;
     }
 
     private IEnumerator Download()
@@ -68,26 +75,28 @@ public class FileDownloadManager : MonoBehaviour
         Debug.Log("Download " + queue.Count + " Contents");
         while (queue.Count != 0)
         {
-            FileDownloadRequest fileDownloadRequest = queue.Dequeue();
+            fileDownloadRequest = queue.Dequeue();
 
             fileDownloadRequest.unityWebRequest.Send();
 
             if (fileDownloadRequest.unityWebRequest.isError)
             {
                 Debug.LogError(fileDownloadRequest.unityWebRequest.error);
+                yield break;
             }
 
             else
             {
+                Debug.Log("[" + fileDownloadRequest.fileName + "] Download Start...");
                 while (!fileDownloadRequest.unityWebRequest.isDone)
-                {
-                    Debug.Log("[" + fileDownloadRequest.fileName + "] Download Start...");
+                {                    
                     progress = fileDownloadRequest.unityWebRequest.downloadProgress;
                     yield return null;
                 }
+                fileDownloadRequest.Release();
                 Debug.Log("[" + fileDownloadRequest.fileName + "] Download Complete!");
             }
-            yield return null;
+            yield return null;            
         }
         Debug.Log("All Contents Download Complete!");
         isDownloading = false;

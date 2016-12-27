@@ -34,8 +34,9 @@ public class FileDownloadRequest
 
         idleTime = 0f;
         retryCnt = 0;
-
-        fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write);
+        
+        Debug.Log(savePath);
+        fileStream = new FileStream(savePath + "/" + fileName, FileMode.Create, FileAccess.Write);
         unityWebRequest = UnityWebRequest.Get(url);
         unityWebRequest.downloadHandler = new FileDownloadHandler(this);
     }

@@ -39,6 +39,6 @@ class FileDownloadHandler : DownloadHandlerScript
 
     protected override void CompleteContent()
     {
-        fileDownloadRequest.Release();
+        
     }
 }
