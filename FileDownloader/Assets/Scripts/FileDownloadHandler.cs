@@ -5,11 +5,11 @@ using System.IO;
 
 class FileDownloadHandler : DownloadHandlerScript
 {
-    private FileDownloadRequest fileDownloadRequest;
+    private FileDownloadInfo fileDownloadInfo;
 
-    public FileDownloadHandler(FileDownloadRequest fileDownloadRequest) : base(fileDownloadRequest.buffer)
+    public FileDownloadHandler(FileDownloadInfo fileDownloadInfo) : base(fileDownloadInfo.buffer)
     {
-        this.fileDownloadRequest = fileDownloadRequest;
+        this.fileDownloadInfo = fileDownloadInfo;
     }
 
     protected override bool ReceiveData(byte[] data, int dataLength)
@@ -19,26 +19,26 @@ class FileDownloadHandler : DownloadHandlerScript
             return false;
         }
 
-        fileDownloadRequest.fileStream.Write(data, 0, dataLength);
-        fileDownloadRequest.receivedBytes += dataLength;
+        fileDownloadInfo.fileStream.Write(data, 0, dataLength);
+        fileDownloadInfo.receivedBytes += dataLength;
         return true;
     }
 
     protected override void ReceiveContentLength(int contentLength)
     {
-        fileDownloadRequest.totalBytes = contentLength;
+        fileDownloadInfo.totalBytes = contentLength;
     }
 
     protected override float GetProgress()
     {
-        if (fileDownloadRequest.totalBytes == 0)
+        if (fileDownloadInfo.totalBytes == 0)
             return 0.0f;
 
-        return (float)fileDownloadRequest.receivedBytes / fileDownloadRequest.totalBytes;
+        return (float)fileDownloadInfo.receivedBytes / fileDownloadInfo.totalBytes;
     }
 
     protected override void CompleteContent()
     {
-        
+        FileDownloadManager.downloadState = FileDownloadManager.DownloadState.Complete;
     }
 }

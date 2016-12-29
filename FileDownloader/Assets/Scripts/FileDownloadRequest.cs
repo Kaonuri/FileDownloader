@@ -4,57 +4,34 @@ using UnityEngine.Networking;
 
 public class FileDownloadRequest
 {
-    public string url;
-    public string fileName;
-    public string savePath;
+    private FileDownloadInfo fileDownloadInfo;
+    public UnityWebRequest unityWebRequest { get; private set; }
 
-    public int bufferSize;
-    public byte[] buffer;
-
-    public long receivedBytes;
-    public long totalBytes;
-
-    public float idleTime;
-    public int retryCnt;
-
-    public FileStream fileStream;
-    public UnityWebRequest unityWebRequest;
-
-    public FileDownloadRequest(string url, string fileName, string savePath)
+    public FileDownloadRequest(FileDownloadInfo fileDownloadInfo)
     {
-        this.url = url;
-        this.fileName = fileName;
-        this.savePath = savePath;
+        this.fileDownloadInfo = fileDownloadInfo;
+        this.fileDownloadInfo.buffer = new byte[this.fileDownloadInfo.bufferSize];
 
-        bufferSize = 256*1024;
-        buffer = new byte[bufferSize];
+        this.fileDownloadInfo.receivedBytes = 0;
+        this.fileDownloadInfo.totalBytes = 0;
 
-        receivedBytes = 0;
-        totalBytes = 0;
+        this.fileDownloadInfo.idleTime = 0f;
+        this.fileDownloadInfo.retryCnt = 0;
 
-        idleTime = 0f;
-        retryCnt = 0;
-        
-        Debug.Log(savePath);
-        fileStream = new FileStream(savePath + "/" + fileName, FileMode.Create, FileAccess.Write);
-        unityWebRequest = UnityWebRequest.Get(url);
-        unityWebRequest.downloadHandler = new FileDownloadHandler(this);
+        this.fileDownloadInfo.fileStream = new FileStream(this.fileDownloadInfo.savePath + "/" + this.fileDownloadInfo.fileName, FileMode.Create, FileAccess.Write);
+
+        unityWebRequest = UnityWebRequest.Get(this.fileDownloadInfo.url);
+        unityWebRequest.downloadHandler = new FileDownloadHandler(this.fileDownloadInfo);
     }
 
     public void Release()
     {
-        if (fileStream != null)
-        {
-            fileStream.Flush();
-            fileStream.Close();
-            fileStream.Dispose();
-            fileStream = null;
-        }
+        fileDownloadInfo.Release();
 
         if (unityWebRequest != null)
         {            
             unityWebRequest.Abort();
-            unityWebRequest.Dispose();
+            unityWebRequest.Dispose();            
             unityWebRequest = null;
         }
     }

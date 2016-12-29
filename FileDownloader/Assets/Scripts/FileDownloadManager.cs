@@ -1,8 +1,6 @@
-﻿using UnityEngine;
-using UnityEngine.Networking;
-using System.Collections;
+﻿using System;
+using UnityEngine;
 using System.Collections.Generic;
-using System.Net;
 
 public class FileDownloadManager : MonoBehaviour
 {
@@ -16,6 +14,14 @@ public class FileDownloadManager : MonoBehaviour
         Failed,
         Complete
     }
+
+    public static DownloadState downloadState = DownloadState.None;
+
+    public Action<string, long, long> OnDownLoadProgress;
+
+    public Action<string, string> OnDownLoadCompleted;
+
+    public Action<string, Exception> OnDownLoadFailed;
 
     [SerializeField]
     private string url;
@@ -37,73 +43,134 @@ public class FileDownloadManager : MonoBehaviour
     public delegate void DownloadCallback();
     private static FileDownloadManager instance = null;
 
-    private static Queue<FileDownloadRequest> queue;
+    private static Queue<FileDownloadInfo> queue;
     private FileDownloadRequest fileDownloadRequest = null;
+    private FileDownloadInfo fileDownloadInfo = null;
 
     // public bool failedFileEnqueue = false;    
 
-    void Awake()
+    private void Awake()
     {
         if (FileDownloadManager.instance == null)
         {
             FileDownloadManager.instance = FindObjectOfType(typeof(FileDownloadManager)) as FileDownloadManager;
         }
 
-        queue = new Queue<FileDownloadRequest>();        
+        queue = new Queue<FileDownloadInfo>();        
     }
 
-    void Start()
+    private void Update()
     {
-        AddDownload("https://d1afzz5wrpeqg9.cloudfront.net/resources/FOH_VER2/N_S3_LV1.mp4", "N_S5_LV1.mp4", Application.dataPath);
-        AddDownload("https://d1afzz5wrpeqg9.cloudfront.net/resources/FOH_VER2/N_S3_LV2.mp4", "N_S5_LV2.mp4", Application.dataPath);
-        AddDownload("https://d1afzz5wrpeqg9.cloudfront.net/resources/FOH_VER2/N_S3_LV3.mp4", "N_S5_LV3.mp4", Application.dataPath);
-        StartCoroutine(Download());
+        switch (downloadState)
+        {
+            case DownloadState.None:
+                {
+                    Release();
+                }
+                break;
+
+            case DownloadState.Prepare:
+                {
+                    if (queue.Count != 0)
+                    {
+                        fileDownloadInfo = queue.Dequeue();
+                        fileDownloadRequest = new FileDownloadRequest(fileDownloadInfo);
+                        fileDownloadRequest.unityWebRequest.Send();
+
+                        if (fileDownloadRequest.unityWebRequest.isError)
+                        {
+                            Debug.LogError(fileDownloadRequest.unityWebRequest.error);
+                            downloadState = DownloadState.Failed;
+                            break;
+                        }
+
+                        Debug.Log("[" + fileDownloadInfo.fileName + "] Download Start...");
+                        downloadState = DownloadState.DownLoading;
+                    }
+
+                    else
+                    {
+                        Debug.LogWarning("Download Queue is empty.");
+                        downloadState = DownloadState.None;
+                    }
+                }
+                break;
+
+            case DownloadState.DownLoading:
+                {
+                    if (fileDownloadInfo.totalBytes > 0)
+                    {
+                        progress = fileDownloadRequest.unityWebRequest.downloadProgress;                  
+                    }
+
+                    if (fileDownloadRequest.unityWebRequest.isError)
+                    {
+                        Debug.LogError(fileDownloadRequest.unityWebRequest.error);
+                        downloadState = DownloadState.Failed;
+                    }
+                }
+                break;
+
+            case DownloadState.Complete:
+                {
+                    Debug.Log("[" + fileDownloadInfo.fileName + "] Download Complete!");
+                    Release();
+                    downloadState = DownloadState.Prepare;
+                }
+                break;
+
+            case DownloadState.Failed:
+                {
+                    Release();
+                    downloadState = DownloadState.None;
+                }
+                break;
+        }        
     }
 
-    void OnApplicationQuit()
-    {        
-        fileDownloadRequest.Release();
-        fileDownloadRequest = null;
-        StopCoroutine(Download());
+    private void OnApplicationQuit()
+    {
+        downloadState = DownloadState.None;
         FileDownloadManager.instance = null;
     }
 
-    private IEnumerator Download()
+    private void Release()
     {
-        isDownloading = true;
-
-        Debug.Log("Download " + queue.Count + " Contents");
-        while (queue.Count != 0)
+        if (fileDownloadRequest != null)
         {
-            fileDownloadRequest = queue.Dequeue();
-
-            fileDownloadRequest.unityWebRequest.Send();
-
-            if (fileDownloadRequest.unityWebRequest.isError)
-            {
-                Debug.LogError(fileDownloadRequest.unityWebRequest.error);
-                yield break;
-            }
-
-            else
-            {
-                Debug.Log("[" + fileDownloadRequest.fileName + "] Download Start...");
-                while (!fileDownloadRequest.unityWebRequest.isDone)
-                {                    
-                    progress = fileDownloadRequest.unityWebRequest.downloadProgress;
-                    yield return null;
-                }
-                fileDownloadRequest.Release();
-                Debug.Log("[" + fileDownloadRequest.fileName + "] Download Complete!");
-            }
-            yield return null;            
+            fileDownloadRequest.Release();
+            fileDownloadRequest = null;
         }
-        Debug.Log("All Contents Download Complete!");
-        isDownloading = false;
+
+        if (fileDownloadInfo != null)
+        {
+            fileDownloadInfo.Release();
+            fileDownloadInfo = null;
+        }
     }
 
     public static void AddDownload(string url, string filename, string path)
     {
-        queue.Enqueue(new FileDownloadRequest(url, filename, path));
+        queue.Enqueue(new FileDownloadInfo(url, filename, path));
+    }
+
+    public static void StartDownload()
+    {
+        downloadState = DownloadState.Prepare;
+    }
+
+    public static void StopDownload()
+    {
+        downloadState = DownloadState.None;
+    }
+
+    public static void PauseDownload()
+    {
+
+    }
+
+    public static void ResumeDownload()
+    {
+        
     }
 }
