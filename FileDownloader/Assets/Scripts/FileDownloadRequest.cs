@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -26,13 +27,18 @@ public class FileDownloadRequest
 
     public void Release()
     {
-        fileDownloadInfo.Release();
-
         if (unityWebRequest != null)
-        {            
+        {
+            if (unityWebRequest.downloadHandler != null)
+            {
+                unityWebRequest.downloadHandler.Dispose();
+            }
+
             unityWebRequest.Abort();
-            unityWebRequest.Dispose();            
+            // unityWebRequest.Dispose();            
             unityWebRequest = null;
         }
+
+        fileDownloadInfo.Release();
     }
 }

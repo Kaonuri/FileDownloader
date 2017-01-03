@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Threading;
 
 public class FileDownloadManager : MonoBehaviour
 {
@@ -16,11 +17,10 @@ public class FileDownloadManager : MonoBehaviour
     }
 
     public static DownloadState downloadState = DownloadState.None;
+    public static Exception exception;
 
     public Action<string, long, long> OnDownLoadProgress;
-
     public Action<string, string> OnDownLoadCompleted;
-
     public Action<string, Exception> OnDownLoadFailed;
 
     [SerializeField]
@@ -46,8 +46,6 @@ public class FileDownloadManager : MonoBehaviour
     private static Queue<FileDownloadInfo> queue;
     private FileDownloadRequest fileDownloadRequest = null;
     private FileDownloadInfo fileDownloadInfo = null;
-
-    // public bool failedFileEnqueue = false;    
 
     private void Awake()
     {
@@ -100,7 +98,7 @@ public class FileDownloadManager : MonoBehaviour
                 {
                     if (fileDownloadInfo.totalBytes > 0)
                     {
-                        progress = fileDownloadRequest.unityWebRequest.downloadProgress;                  
+                        progress = fileDownloadRequest.unityWebRequest.downloadProgress;                        
                     }
 
                     if (fileDownloadRequest.unityWebRequest.isError)
@@ -115,7 +113,10 @@ public class FileDownloadManager : MonoBehaviour
                 {
                     Debug.Log("[" + fileDownloadInfo.fileName + "] Download Complete!");
                     Release();
-                    downloadState = DownloadState.Prepare;
+                    if(queue.Count != 0)
+                        downloadState = DownloadState.Prepare;
+                    else
+                        downloadState = DownloadState.None;
                 }
                 break;
 
@@ -131,6 +132,14 @@ public class FileDownloadManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         downloadState = DownloadState.None;
+        Release();
+        FileDownloadManager.instance = null;
+    }
+
+    private void OnDestroy()
+    {
+        downloadState = DownloadState.None;
+        Release();
         FileDownloadManager.instance = null;
     }
 
